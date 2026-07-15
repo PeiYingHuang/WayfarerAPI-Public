@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="WayfarerAPI.Api/WayfarerAPI.Api.csproj" />
+  <Project Path="WayfarerAPI.Application/WayfarerAPI.Application.csproj" />
+  <Project Path="WayfarerAPI.Domain/WayfarerAPI.Domain.csproj" />
+  <Project Path="WayfarerAPI.Infrastructure/WayfarerAPI.Infrastructure.csproj" />
+</Solution>

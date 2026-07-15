@@ -1,0 +1,42 @@
+@WayfarerAPI.Api_HostAddress = http://localhost:5052
+
+POST {{WayfarerAPI.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "demo@wayfarer.com",
+	"password": "Passw0rd!",
+	"displayName": "Wayfarer Demo"
+}
+
+###
+
+POST {{WayfarerAPI.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "demo@wayfarer.com",
+	"password": "Passw0rd!"
+}
+
+###
+
+POST {{WayfarerAPI.Api_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+	"refreshToken": "<PASTE_REFRESH_TOKEN_HERE>"
+}
+
+###
+
+GET {{WayfarerAPI.Api_HostAddress}}/api/me/profile
+Authorization: Bearer <PASTE_ACCESS_TOKEN_HERE>
+Accept: application/json
+
+###
+
+GET {{WayfarerAPI.Api_HostAddress}}/swagger/v1/swagger.json
+Accept: application/json
+
+###
