@@ -28,8 +28,8 @@ public class GoogleCloudStorageClient : IGoogleCloudStorageClient
             keyFilePath = Path.GetFullPath(keyFilePath, AppContext.BaseDirectory);
         }
 
-        var credential = CredentialFactory.FromFile<ServiceAccountCredential>(keyFilePath)
-        .ToGoogleCredential();
+        var credential = GoogleCredential.GetApplicationDefault();
+
         _storageClient = StorageClient.Create(credential);
         _urlSigner = UrlSigner.FromCredential(credential);
     }

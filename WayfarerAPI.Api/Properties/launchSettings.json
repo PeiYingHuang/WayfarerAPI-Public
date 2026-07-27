@@ -5,7 +5,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GOOGLE_APPLICATION_CREDENTIALS": "D:\\My Program\\Wayfarer\\WayfarerAPI\\WayfarerAPI.Infrastructure\\GCP\\wayfarer-493308-ddc9e8a9049e.json"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5052"
@@ -25,7 +26,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GOOGLE_APPLICATION_CREDENTIALS": "D:\\My Program\\Wayfarer\\WayfarerAPI\\WayfarerAPI.Infrastructure\\GCP\\wayfarer-493308-ddc9e8a9049e.json"
       }
     },
     "Container (Dockerfile)": {

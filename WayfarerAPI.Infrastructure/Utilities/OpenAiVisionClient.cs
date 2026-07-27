@@ -23,7 +23,7 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
 
     public async Task<string> ParseReceiptAsync(byte[] imageBytes, string mimeType, string? currency = null)
     {
-        var apiKey = _configuration["OpenAI:ApiKey:OCR:"];
+        var apiKey = _configuration["OpenAI:ApiKey:OCR"];
         var model = _configuration["OpenAI:OcrModel"];
 
         if (string.IsNullOrWhiteSpace(apiKey))
