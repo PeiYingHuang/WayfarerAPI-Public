@@ -14,11 +14,11 @@ public class AuthController : ApiControllerBase
         _authService = authService;
     }
 
+    [Authorize]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
     {
-        var response = await _authService.RegisterAsync(request);
-        return ApiResult(response);
+        return ApiResult(await _authService.RegisterAsync(request));
     }
 
     [HttpPost("login")]
