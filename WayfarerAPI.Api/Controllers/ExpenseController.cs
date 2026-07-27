@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WayfarerAPI.Application.DTOs;
+using WayfarerAPI.Application.Interfaces.Repositories;
 using WayfarerAPI.Application.Interfaces.Service;
+using WayfarerAPI.Infrastructure.Repositories;
 
 namespace WayfarerAPI.Api.Controllers;
 
@@ -10,14 +12,17 @@ namespace WayfarerAPI.Api.Controllers;
 public class ExpenseController : ApiControllerBase
 {
     private readonly IExpenseService _expenseService;
+    private readonly ITravelMemberRepository _travelMemberRepository;
     private readonly ILogger<ExpenseController> _logger;
 
     public ExpenseController(
         IExpenseService expenseService,
-        ILogger<ExpenseController> logger)
+        ILogger<ExpenseController> logger,
+        ITravelMemberRepository travelMemberRepository)
     {
         _expenseService = expenseService;
         _logger = logger;
+        _travelMemberRepository = travelMemberRepository;
     }
 
     [HttpPost]
@@ -92,5 +97,22 @@ public class ExpenseController : ApiControllerBase
         var travellerId = GetCurrentUserId();
         await _expenseService.DeleteAsync(travellerId, id);
         return ApiResult(true);
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportExcel([FromQuery] Guid memberId)
+    {
+        var member = await _travelMemberRepository.GetByIdAsync(memberId);
+        if(member == null)
+        {
+            throw new ArgumentException("Member not found.");
+        }
+        var fileBytes = await _expenseService.ExportExpenseInfoToExcel(memberId);
+        var fileName = $"{member.Name}的花費.xlsx";
+
+        return File(
+            fileBytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 }

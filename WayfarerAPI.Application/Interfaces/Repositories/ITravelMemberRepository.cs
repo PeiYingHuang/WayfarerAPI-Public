@@ -4,6 +4,7 @@ namespace WayfarerAPI.Application.Interfaces.Repositories;
 
 public interface ITravelMemberRepository
 {
+    Task<TravelMember?> GetByIdAsync(Guid memberId);
     Task<IEnumerable<TravelMember>> GetByTravelIdAsync(Guid travelId);
     Task<IEnumerable<TravelMember>> GetByTravelIdsAsync(IEnumerable<Guid> travelIds);
     Task<IEnumerable<TravelMember>> GetByTravellerIdAsync(Guid travellerId);

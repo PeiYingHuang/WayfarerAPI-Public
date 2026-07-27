@@ -19,7 +19,7 @@ public static class ItineraryMappings
         LocationName = string.IsNullOrWhiteSpace(dto.LocationName) ? null : dto.LocationName.Trim(),
         Latitude = dto.Latitude,
         Longitude = dto.Longitude,
-        Category = string.IsNullOrWhiteSpace(dto.Category) ? null : Enum.TryParse<ItineraryCategoryEnum>(dto.Category, out var category) ? category : (ItineraryCategoryEnum?)null,
+        Category = dto.Category.HasValue ? Enum.TryParse<ItineraryCategoryEnum>(dto.Category.Value.ToString(), out var category) ? category : (ItineraryCategoryEnum?)null : null,
         SortOrder = dto.SortOrder,
     };
 

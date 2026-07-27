@@ -68,6 +68,6 @@ public sealed class UpsertItineraryDetailDto
     public string? LocationName { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public string? Category { get; set; }
+    public int? Category { get; set; }
     public int SortOrder { get; set; }
 }

@@ -239,21 +239,21 @@ public sealed class ItineraryService : IItineraryService
 
     public AiItineraryDraftModel TestDraftData()
     {
-        var model = new AiItineraryDraftModel
+        var draft = new AiItineraryDraftModel
         {
             Days =
     [
         new AiItineraryDayDraftModel
         {
             DayNumber = 1,
-            Date = new DateTime(2026,08,22),
-            DayTitle = "抵達釜山與輕鬆探索",
+            Date = new DateTime(2026, 8, 22),
+            DayTitle = "抵達釜山與初探市區",
             Details =
             [
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "班機抵達釜山金海國際機場",
-                    Description = "從台北桃園機場出發，抵達釜山金海國際機場",
+                    Title = "抵達釜山金海國際機場",
+                    Description = "搭乘下午班機從台北出發，約18:00抵達釜山，辦理入境手續。",
                     StartTime = "18:00",
                     EndTime = "18:30",
                     LocationName = "釜山金海國際機場",
@@ -261,54 +261,53 @@ public sealed class ItineraryService : IItineraryService
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "機場至Avani Central Busan飯店交通",
-                    Description = "搭乘計程車約1小時前往Avani Central Busan酒店",
+                    Title = "機場至飯店交通",
+                    Description = "搭乘計程車約1小時抵達Avani Central Busan，方便攜帶行李和小孩。",
                     StartTime = "18:30",
                     EndTime = "19:30",
-                    LocationName = "機場到Avani Central Busan",
+                    LocationName = "Avani Central Busan",
                     Category = "taxi"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "晚餐：釜山巨人炸雞品嘗",
-                    Description = "享用著名的釜山巨人炸雞，適合全家大小",
+                    Title = "晚餐：釜山巨人炸雞",
+                    Description = "人氣炸雞連鎖，酥脆口感適合全家共享，距飯店不遠，方便第一天簡單用餐。",
                     StartTime = "20:00",
                     EndTime = "21:00",
-                    LocationName = "Avani Central Busan附近餐廳",
+                    LocationName = "釜山巨人炸雞 (附近分店)",
                     Category = "food"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "飯店休息",
-                    Description = "適合小朋友休息調整時差，準備接下來的行程",
+                    Title = "飯店休息與自由活動",
+                    Description = "讓小孩和大人調整時差，休息為隔日旅程備戰。",
                     StartTime = "21:00",
-                    EndTime = "22:00",
+                    EndTime = null,
                     LocationName = "Avani Central Busan",
                     Category = "accommodation"
                 }
             ]
         },
-
         new AiItineraryDayDraftModel
         {
             DayNumber = 2,
-            Date = new DateTime(2026,08,23),
-            DayTitle = "釜山國際市場與海岸列車體驗",
+            Date = new DateTime(2026, 8, 23),
+            DayTitle = "釜山市區文化巡禮與國際市場購物",
             Details =
             [
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "早餐",
-                    Description = "於飯店附近享用早餐，準備一天行程",
+                    Title = "早餐及出發",
+                    Description = "飯店附近咖啡店輕食早餐，準備當天行程。",
                     StartTime = "08:00",
-                    EndTime = "09:00",
-                    LocationName = null,
-                    Category = "food"
+                    EndTime = "08:45",
+                    LocationName = "Avani Central Busan 附近咖啡廳",
+                    Category = "coffee"
                 },
                 new AiItineraryDetailDraftModel
                 {
                     Title = "釜山國際市場購物",
-                    Description = "前往釜山國際市場採購棉被及當地特色商品",
+                    Description = "著名的傳統市場，選購棉被及其他韓國特色商品，適合全家輕鬆逛街。",
                     StartTime = "09:30",
                     EndTime = "11:30",
                     LocationName = "釜山國際市場",
@@ -316,272 +315,260 @@ public sealed class ItineraryService : IItineraryService
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "午餐休息",
-                    Description = "在市場附近餐廳享用午餐，休息調整",
+                    Title = "午餐：市場附近韓式料理",
+                    Description = "品嚐市場周邊經典海鮮煎餅或韓式小吃，口味道地且方便用餐。",
                     StartTime = "11:30",
                     EndTime = "12:30",
-                    LocationName = "釜山國際市場附近",
+                    LocationName = "釜山市場附近韓式餐廳",
                     Category = "food"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "海岸列車體驗",
-                    Description = "搭乘海岸列車欣賞釜山美麗海岸風光，輕鬆適合家庭出行",
+                    Title = "甘川文化村輕鬆散步",
+                    Description = "欣賞彩色街道與藝術裝置，調整步行節奏適合帶小孩，並有休憩空間。",
                     StartTime = "13:00",
                     EndTime = "15:00",
-                    LocationName = "海岸列車路線",
-                    Category = "train"
+                    LocationName = "甘川文化村",
+                    Category = "attraction"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "下午茶時間",
-                    Description = "於咖啡廳休息並享用下午茶",
-                    StartTime = "15:30",
-                    EndTime = "16:30",
-                    LocationName = "釜山市區咖啡廳",
+                    Title = "咖啡休息：甘川文化村附近咖啡廳",
+                    Description = "享用甜點與飲品，稍作休息，適合親子時光。",
+                    StartTime = "15:00",
+                    EndTime = "15:45",
+                    LocationName = "甘川文化村咖啡廳",
                     Category = "coffee"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "晚餐",
-                    Description = "前往人氣餐廳享用本地料理",
+                    Title = "晚餐：釜山當地燒烤餐廳",
+                    Description = "體驗韓式燒肉美食，方便搭乘交通回飯店。",
                     StartTime = "18:00",
                     EndTime = "19:30",
-                    LocationName = "市區餐廳",
+                    LocationName = "市區著名韓式燒烤店",
                     Category = "food"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "回飯店休息",
-                    Description = null,
+                    Title = "返回飯店休息",
+                    Description = "準備隔日行程，飯店休息。",
                     StartTime = "20:00",
-                    EndTime = "21:00",
+                    EndTime = null,
                     LocationName = "Avani Central Busan",
                     Category = "accommodation"
                 }
             ]
         },
-
         new AiItineraryDayDraftModel
         {
             DayNumber = 3,
-            Date = new DateTime(2026,08,24),
-            DayTitle = "天空膠囊列車與釜山市區輕鬆遊",
+            Date = new DateTime(2026, 8, 24),
+            DayTitle = "海岸列車與天空膠囊列車體驗",
             Details =
             [
                 new AiItineraryDetailDraftModel
                 {
                     Title = "早餐",
-                    Description = "在飯店附近享用當地早餐",
-                    StartTime = "08:00",
-                    EndTime = "09:00",
-                    LocationName = null,
-                    Category = "food"
+                    Description = "飯店附近簡單早餐，為一日行程補充能量。",
+                    StartTime = "07:30",
+                    EndTime = "08:00",
+                    LocationName = "Avani Central Busan附近咖啡廳",
+                    Category = "coffee"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "天空膠囊列車搭乘",
-                    Description = "體驗天空膠囊列車，享受俯瞰城市與海景樂趣",
-                    StartTime = "09:30",
-                    EndTime = "11:00",
-                    LocationName = "天空膠囊列車站",
+                    Title = "入住新飯店：紐CZ海雲台雷西登斯",
+                    Description = "上午辦理退房並前往新飯店，放置行李。",
+                    StartTime = "08:30",
+                    EndTime = "09:30",
+                    LocationName = "紐CZ海雲台雷西登斯",
+                    Category = "accommodation"
+                },
+                new AiItineraryDetailDraftModel
+                {
+                    Title = "乘坐海岸列車（海雲台-松亭線）",
+                    Description = "欣賞美麗海景，車程輕鬆適合攜帶小孩的家庭旅遊。",
+                    StartTime = "10:00",
+                    EndTime = "11:30",
+                    LocationName = "海岸列車路線",
                     Category = "train"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "午餐",
-                    Description = "在當地餐廳品嘗當地美食",
-                    StartTime = "11:30",
-                    EndTime = "12:30",
-                    LocationName = "市區餐廳",
+                    Title = "午餐：靠海海鮮餐廳",
+                    Description = "海雲台附近新鮮海鮮料理，環境舒適適合親子用餐。",
+                    StartTime = "12:00",
+                    EndTime = "13:30",
+                    LocationName = "海雲台海鮮餐廳",
                     Category = "food"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "釜山市區輕鬆觀光",
-                    Description = "安排交通工具輕鬆遊覽附近景點，避免過大體力消耗",
-                    StartTime = "13:00",
-                    EndTime = "16:00",
-                    LocationName = "釜山市區",
-                    Category = "taxi"
+                    Title = "乘坐天空膠囊列車",
+                    Description = "體驗釜山天空膠囊列車，欣賞市區與海景，適合全家大小體驗樂趣。",
+                    StartTime = "14:00",
+                    EndTime = "15:30",
+                    LocationName = "釜山天空膠囊列車站",
+                    Category = "train"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "下午茶",
-                    Description = "於咖啡店享受下午茶時間",
-                    StartTime = "16:00",
-                    EndTime = "17:00",
-                    LocationName = "市區咖啡廳",
+                    Title = "下午茶：海雲台沿海咖啡廳",
+                    Description = "輕鬆享用甜點與咖啡，散步海邊親子好選擇。",
+                    StartTime = "15:30",
+                    EndTime = "16:30",
+                    LocationName = "海雲台咖啡廳",
                     Category = "coffee"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "晚餐",
-                    Description = "嘗試釜山當地特色料理",
-                    StartTime = "18:00",
-                    EndTime = "19:30",
-                    LocationName = "市區推薦餐廳",
+                    Title = "晚餐：海雲台當地餐廳",
+                    Description = "簡約韓式餐點，方便飯店交通，適合全家享用。",
+                    StartTime = "18:30",
+                    EndTime = "20:00",
+                    LocationName = "海雲台區韓式餐廳",
                     Category = "food"
-                },
-                new AiItineraryDetailDraftModel
-                {
-                    Title = "回飯店休息",
-                    Description = null,
-                    StartTime = "20:00",
-                    EndTime = "21:00",
-                    LocationName = "Avani Central Busan",
-                    Category = "accommodation"
                 }
             ]
         },
-
         new AiItineraryDayDraftModel
         {
             DayNumber = 4,
-            Date = new DateTime(2026,08,25),
-            DayTitle = "飯店遷移與海雲台探索",
+            Date = new DateTime(2026, 8, 25),
+            DayTitle = "海雲台周邊親子輕鬆遊",
             Details =
             [
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "退房及前往海雲台",
-                    Description = "早上辦理退房手續並搭乘計程車或地鐵前往紐CZ海雲台雷西登斯",
+                    Title = "早餐",
+                    Description = "飯店內或附近咖啡廳輕食早餐。",
                     StartTime = "08:00",
-                    EndTime = "09:00",
-                    LocationName = "Avani Central Busan至紐CZ海雲台雷西登斯",
-                    Category = "taxi"
-                },
-                new AiItineraryDetailDraftModel
-                {
-                    Title = "入住紐CZ海雲台雷西登斯",
-                    Description = "辦理入住手續",
-                    StartTime = "09:00",
-                    EndTime = "09:30",
-                    LocationName = "紐CZ海雲台雷西登斯",
-                    Category = "accommodation"
-                },
-                new AiItineraryDetailDraftModel
-                {
-                    Title = "早餐或輕食",
-                    Description = "附近咖啡廳進食早餐或輕食",
-                    StartTime = "09:30",
-                    EndTime = "10:00",
-                    LocationName = "海雲台附近咖啡廳",
+                    EndTime = "08:45",
+                    LocationName = "紐CZ海雲台雷西登斯附近咖啡廳",
                     Category = "coffee"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "海雲台海灘輕鬆旅遊",
-                    Description = "帶小孩到海雲台海灘遊玩及稍作休息",
-                    StartTime = "10:30",
-                    EndTime = "13:00",
-                    LocationName = "海雲台海灘",
+                    Title = "海雲台海水浴場",
+                    Description = "親子海灘玩水，風景優美且安全設施完善，適合學齡前小孩。",
+                    StartTime = "09:00",
+                    EndTime = "11:30",
+                    LocationName = "海雲台海水浴場",
                     Category = "attraction"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "午餐",
-                    Description = "享用海雲台海鮮或當地餐點",
-                    StartTime = "13:00",
-                    EndTime = "14:00",
-                    LocationName = "海雲台區餐廳",
+                    Title = "午餐：海雲台街邊小吃",
+                    Description = "品嘗韓式煎餅、炸雞等，方便親子享用。",
+                    StartTime = "12:00",
+                    EndTime = "13:00",
+                    LocationName = "海雲台街頭小吃攤",
                     Category = "food"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "海雲台市場購物及休憩",
-                    Description = "逛海雲台市場，購買手信及享受輕鬆時間",
-                    StartTime = "14:30",
-                    EndTime = "16:00",
-                    LocationName = "海雲台市場",
-                    Category = "shopping"
+                    Title = "釜山水族館",
+                    Description = "適合帶小孩參觀，體驗水底隧道和多樣海洋生物展示。",
+                    StartTime = "13:30",
+                    EndTime = "15:30",
+                    LocationName = "釜山水族館",
+                    Category = "attraction"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "晚餐",
-                    Description = "海雲台附近餐廳享用晚餐",
+                    Title = "咖啡與休息",
+                    Description = "水族館附近咖啡廳休息，提供舒適空間和兒童友善環境。",
+                    StartTime = "15:30",
+                    EndTime = "16:15",
+                    LocationName = "海雲台水族館附近咖啡廳",
+                    Category = "coffee"
+                },
+                new AiItineraryDetailDraftModel
+                {
+                    Title = "晚餐：韓國傳統韓定食",
+                    Description = "餐廳提供多樣精緻料理，適合一家大小一起品嘗。",
                     StartTime = "18:00",
                     EndTime = "19:30",
-                    LocationName = "海雲台區餐廳",
+                    LocationName = "海雲台韓定食餐廳",
                     Category = "food"
-                },
-                new AiItineraryDetailDraftModel
-                {
-                    Title = "飯店休息",
-                    Description = null,
-                    StartTime = "20:00",
-                    EndTime = "21:30",
-                    LocationName = "紐CZ海雲台雷西登斯",
-                    Category = "accommodation"
                 }
             ]
         },
-
         new AiItineraryDayDraftModel
         {
             DayNumber = 5,
-            Date = new DateTime(2026,08,26),
-            DayTitle = "海雲台輕鬆行與返程",
+            Date = new DateTime(2026, 8, 26),
+            DayTitle = "出發前輕鬆半日遊與回程",
             Details =
             [
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "早餐及輕鬆早晨散步",
-                    Description = "飯店附近享用早餐後，海雲台周邊輕鬆散步",
-                    StartTime = "08:00",
-                    EndTime = "09:30",
-                    LocationName = "海雲台區域",
+                    Title = "早餐",
+                    Description = "飯店附近輕食，預留時間準備退房及前往機場。",
+                    StartTime = "07:30",
+                    EndTime = "08:00",
+                    LocationName = "紐CZ海雲台雷西登斯附近咖啡廳",
+                    Category = "coffee"
+                },
+                new AiItineraryDetailDraftModel
+                {
+                    Title = "松島天空公園短程散步",
+                    Description = "海雲台附近公園，風景優美且輕鬆，適合小孩活動放鬆。",
+                    StartTime = "08:30",
+                    EndTime = "10:00",
+                    LocationName = "松島天空公園",
+                    Category = "attraction"
+                },
+                new AiItineraryDetailDraftModel
+                {
+                    Title = "午餐：海雲台區輕食餐廳",
+                    Description = "提供簡單韓式料理或西餐，方便快速用餐。",
+                    StartTime = "10:30",
+                    EndTime = "11:30",
+                    LocationName = "海雲台輕食餐廳",
                     Category = "food"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "輕鬆市區觀光",
-                    Description = "搭乘地鐵或計程車輕鬆遊覽附近短途景點",
-                    StartTime = "10:00",
-                    EndTime = "12:00",
-                    LocationName = "海雲台周邊",
-                    Category = "taxi"
-                },
-                new AiItineraryDetailDraftModel
-                {
-                    Title = "午餐",
-                    Description = "享用當地餐廳午餐",
-                    StartTime = "12:00",
-                    EndTime = "13:00",
-                    LocationName = "海雲台區",
-                    Category = "food"
-                },
-                new AiItineraryDetailDraftModel
-                {
-                    Title = "返回飯店整理行李",
-                    Description = "回飯店準備退房",
-                    StartTime = "13:30",
-                    EndTime = "14:30",
+                    Title = "返回飯店準備退房",
+                    Description = "返回飯店整理行李，預備前往機場。",
+                    StartTime = "11:30",
+                    EndTime = "12:30",
                     LocationName = "紐CZ海雲台雷西登斯",
                     Category = "accommodation"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "前往釜山金海國際機場",
-                    Description = "搭乘計程車抵達機場，預留足夠時間辦理登機及安檢",
-                    StartTime = "15:00",
-                    EndTime = "17:00",
-                    LocationName = "紐CZ海雲台雷西登斯至釜山金海國際機場",
+                    Title = "飯店至機場交通",
+                    Description = "搭計程車約1小時前往釜山金海國際機場，預留充裕時間。",
+                    StartTime = "12:30",
+                    EndTime = "13:30",
+                    LocationName = "釜山金海國際機場",
                     Category = "taxi"
                 },
                 new AiItineraryDetailDraftModel
                 {
-                    Title = "候機及返台班機",
-                    Description = "搭乘班機返回台北",
+                    Title = "機場休息與出境準備",
+                    Description = "預留不少於3小時的時間進行退稅及安檢手續。",
+                    StartTime = "13:30",
+                    EndTime = "16:10",
+                    LocationName = "釜山金海國際機場",
+                    Category = "other"
+                },
+                new AiItineraryDetailDraftModel
+                {
+                    Title = "回程班機起飛",
+                    Description = "搭乘晚間19:10班機返回台北。",
                     StartTime = "19:10",
-                    EndTime = "20:35",
-                    LocationName = "釜山金海國際機場至台北桃園機場",
+                    EndTime = null,
+                    LocationName = "釜山金海國際機場",
                     Category = "airplane"
                 }
             ]
         }
     ]
         };
-        return model;
+        return draft;
     }
 }

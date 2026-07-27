@@ -14,5 +14,6 @@ namespace WayfarerAPI.Application.Interfaces.Service
         Task<ExpenseResponseDto?> GetByExpenseIdAsync(Guid expenseId);
         Task<List<SettlementTransactionResponseDto>> CalculateSettlementsAsync(Guid travelId);
         Task DeleteAsync(Guid travellerId, Guid expenseId);
+        Task<byte[]> ExportExpenseInfoToExcel(Guid memberId);
     }
 }

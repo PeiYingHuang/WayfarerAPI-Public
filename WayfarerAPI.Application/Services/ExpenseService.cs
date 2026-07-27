@@ -1,8 +1,13 @@
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using WayfarerAPI.Application.DTOs;
+using WayfarerAPI.Application.Extensions;
 using WayfarerAPI.Application.Interfaces.Data;
+using WayfarerAPI.Application.Interfaces.QueryServices;
 using WayfarerAPI.Application.Interfaces.Repositories;
 using WayfarerAPI.Application.Interfaces.Service;
 using WayfarerAPI.Application.Interfaces.Utilities;
+using WayfarerAPI.Application.Models;
 
 namespace WayfarerAPI.Application.Services;
 
@@ -15,6 +20,7 @@ public class ExpenseService : IExpenseService
     private readonly ITravelMemberRepository _travelMemberRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IGoogleCloudStorageClient _gcsClient;
+    private readonly IExpenseQueryService _expenseQueryService;
     private readonly string _bucketName;
     private const string ReceiptFolderPath = "receipts";
 
@@ -25,7 +31,8 @@ public class ExpenseService : IExpenseService
         IExpenseSplitRepository expenseSplitRepository,
         ITravelMemberRepository travelMemberRepository,
         IUnitOfWork unitOfWork,
-        IGoogleCloudStorageClient gcsClient)
+        IGoogleCloudStorageClient gcsClient,
+        IExpenseQueryService expenseQueryService)
     {
         _expenseRepository = expenseRepository;
         _expenseDetailRepository = expenseDetailRepository;
@@ -35,6 +42,7 @@ public class ExpenseService : IExpenseService
         _unitOfWork = unitOfWork;
         _gcsClient = gcsClient;
         _bucketName = gcsClient.BucketName;
+        _expenseQueryService = expenseQueryService;
     }
 
     public async Task<Guid> CreateAsync(Guid travellerId, CreateExpenseRequestDto request)
@@ -430,5 +438,84 @@ public class ExpenseService : IExpenseService
                 try { await _gcsClient.DeleteFileAsync(_bucketName, name); } catch { /* 刪除失敗不影響主流程 */ }
             }
         }
+    }
+
+    public async Task<byte[]> ExportExpenseInfoToExcel(Guid memberId)
+    {
+        IEnumerable<ExpenseInfoModel> expenses  = await _expenseQueryService.GetExpenseInfoByMemberIdAsync(memberId);
+
+        using var workbook = new XSSFWorkbook();
+        var sheet = workbook.CreateSheet("花費細項");
+
+        // ---------- 樣式 ----------
+        var headerStyle = workbook.CreateCellStyle();
+        var headerFont = workbook.CreateFont();
+        headerFont.IsBold = true;
+        headerStyle.SetFont(headerFont);
+        headerStyle.FillForegroundColor = NPOI.HSSF.Util.HSSFColor.Grey25Percent.Index;
+        headerStyle.FillPattern = FillPattern.SolidForeground;
+
+        var dateStyle = workbook.CreateCellStyle();
+        var dataFormat = workbook.CreateDataFormat();
+        dateStyle.DataFormat = dataFormat.GetFormat("yyyy-mm-dd hh:mm");
+
+        var moneyStyle = workbook.CreateCellStyle();
+        moneyStyle.DataFormat = dataFormat.GetFormat("#,##0");
+
+        // ---------- 標題列 ----------
+        var headers = new[]
+        {
+            "消費時間", "類別", "項目名稱", "消費金額"
+        };
+
+        var headerRow = sheet.CreateRow(0);
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = headerRow.CreateCell(i);
+            cell.SetCellValue(headers[i]);
+            cell.CellStyle = headerStyle;
+        }
+
+        // ---------- 資料列 ----------
+        int rowIndex = 1;
+        foreach (var e in expenses)
+        {
+            var row = sheet.CreateRow(rowIndex);
+
+            var timeCell = row.CreateCell(0);
+            timeCell.SetCellValue(e.ExpenseTime);
+            timeCell.CellStyle = dateStyle;
+
+            row.CreateCell(1).SetCellValue(e.Category.GetDescription());
+            row.CreateCell(2).SetCellValue(e.ItemName);
+
+            var amountCell = row.CreateCell(3);
+            amountCell.SetCellValue((double)e.SplitAmount);
+            amountCell.CellStyle = moneyStyle;
+            rowIndex++;
+        }
+        //總計
+        var totalRow = sheet.CreateRow(rowIndex);
+
+        totalRow.CreateCell(0).SetCellValue("總計");
+        totalRow.CreateCell(1).SetCellValue("");
+
+        var totalAmountCell = totalRow.CreateCell(3);
+        totalAmountCell.SetCellValue((double)expenses.Sum(x=>x.SplitAmount));
+        totalAmountCell.CellStyle = moneyStyle;
+
+        // ---------- 欄寬自動調整 ----------
+        var columnWidths = new[] { 16, 10, 60, 10 }; // 依實際欄位調整
+        for (int i = 0; i < columnWidths.Length; i++)
+        {
+            sheet.SetColumnWidth(i, columnWidths[i] * 256);
+        }
+
+        // 凍結首列
+        sheet.CreateFreezePane(0, 1);
+
+        using var stream = new MemoryStream();
+        workbook.Write(stream, leaveOpen: true);
+        return stream.ToArray();
     }
 }

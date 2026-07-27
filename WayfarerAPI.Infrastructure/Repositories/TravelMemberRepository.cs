@@ -11,6 +11,16 @@ public sealed class TravelMemberRepository : ITravelMemberRepository
 
     public TravelMemberRepository(IDbSession session) => _session = session;
 
+    public async Task<TravelMember?> GetByIdAsync(Guid memberId)
+    {
+        const string sql = """
+            SELECT Id, TravelId, Name, TravellerId, MemberType, Age, IsPayer, CreatedBy, CreatedAt
+            FROM TravelMember 
+            WHERE Id = @memberId;
+            """;
+        return await _session.Connection.QueryFirstOrDefaultAsync<TravelMember>(
+            new CommandDefinition(sql, new { memberId }, transaction: _session.Transaction));
+    }
     public async Task<IEnumerable<TravelMember>> GetByTravelIdAsync(Guid travelId)
     {
         const string sql = """
