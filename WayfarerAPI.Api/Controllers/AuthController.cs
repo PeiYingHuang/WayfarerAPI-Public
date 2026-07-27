@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WayfarerAPI.Application.DTOs;
 using WayfarerAPI.Application.Interfaces.Service;
