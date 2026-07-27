@@ -23,11 +23,11 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
 
     public async Task<string> ParseReceiptAsync(byte[] imageBytes, string mimeType, string? currency = null)
     {
-        var apiKey = _configuration["OpenAI:ApiKey"];
+        var apiKey = _configuration["OpenAI:ApiKey:OCR:"];
         var model = _configuration["OpenAI:OcrModel"];
 
         if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("未設定 OpenAI:ApiKey");
+            throw new InvalidOperationException("未設定 OpenAI:ApiKey:OCR");
 
         if (string.IsNullOrWhiteSpace(model))
             model = "gpt-4.1-mini";
@@ -277,11 +277,11 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
 
     public async Task<AiItineraryDraftModel> GenerateItineraryAsync(ItineraryAiModel request, CancellationToken ct)
     {
-        var apiKey = _configuration["OpenAI:ApiKey"];
+        var apiKey = _configuration["OpenAI:ApiKey:AI"];
         var model = _configuration["OpenAI:ItineraryModel"];
 
         if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("未設定 OpenAI:ApiKey");
+            throw new InvalidOperationException("未設定 OpenAI:ApiKey:AI");
 
         if (string.IsNullOrWhiteSpace(model))
             model = "gpt-4.1-mini";
