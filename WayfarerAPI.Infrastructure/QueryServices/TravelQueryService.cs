@@ -43,7 +43,7 @@ public class TravelQueryService : ITravelQueryService
         const string sql = """
             WITH Travel AS (
             SELECT TravelId
-            FROM travelmember
+            FROM TravelMember
             WHERE TravellerId = @travellerId)
 
             SELECT t.Id, t.Name, tc.ProviderUserId AS Email

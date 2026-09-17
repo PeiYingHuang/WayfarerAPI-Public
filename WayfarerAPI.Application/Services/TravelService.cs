@@ -251,36 +251,12 @@ public sealed class TravelService : ITravelService
 
     public async Task<IEnumerable<TravellerResponseDto>> GetFriendsByTravellerIdAsync(Guid travellerId)
     {
-        _logger.LogInformation(
-        "GetFriends START TravellerId={TravellerId}",
-        travellerId);
-        try
+        var friends = await _travelQueryService.GetFriendInfoByTravellerIdAsync(travellerId);
+        return friends.Select(info => new TravellerResponseDto
         {
-            var friends = await _travelQueryService.GetFriendInfoByTravellerIdAsync(travellerId);
-            _logger.LogInformation(
-       "GetFriends DB completed TravellerId={TravellerId}",
-       travellerId);
-            var result = friends.Select(info => new TravellerResponseDto
-            {
-                Id = info.Id,
-                Name = info.Name,
-                Email = info.Email
-            });
-            _logger.LogInformation(
-            "GetFriends END TravellerId={TravellerId}",
-            travellerId);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-            ex,
-            "GetFriends ERROR TravellerId={TravellerId}",
-            travellerId);
-            throw;
-        }
-        
-       
-       
+            Id = info.Id,
+            Name = info.Name,
+            Email = info.Email
+        });
     }
 }
