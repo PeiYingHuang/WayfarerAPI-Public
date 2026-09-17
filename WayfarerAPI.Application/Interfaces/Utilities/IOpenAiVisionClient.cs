@@ -5,7 +5,7 @@ namespace WayfarerAPI.Application.Interfaces.Utilities;
 
 public interface IOpenAiVisionClient
 {
-    Task<string> ParseReceiptAsync(byte[] imageBytes, string mimeType, string? currency = null);
+    Task<ReceiptModel> ParseReceiptAsync(byte[] imageBytes, string mimeType, string? currency = null);
     Task<AiItineraryDraftModel> GenerateItineraryAsync(ItineraryAiModel request, CancellationToken ct);
     Task<ItineraryCategoryEnum> ParseCategory(string? promptValue);
 }

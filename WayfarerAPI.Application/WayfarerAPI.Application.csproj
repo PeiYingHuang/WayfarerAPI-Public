@@ -12,6 +12,10 @@
     <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DTOs\OpenAi\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
 	<AcceptNPOIOSMFLicense>true</AcceptNPOIOSMFLicense>

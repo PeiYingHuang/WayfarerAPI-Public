@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using WayfarerAPI.Application.Interfaces.Utilities;
 using WayfarerAPI.Application.Models;
 using WayfarerAPI.Domain.Enumerations;
@@ -21,7 +22,68 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
         _logger = logger;
     }
 
-    public async Task<string> ParseReceiptAsync(byte[] imageBytes, string mimeType, string? currency = null)
+    #region Ocr
+    private const string MerchantAndDescriptionRules = """
+        MERCHANT NAME — apply these rules in order, stop at the first match:
+ 
+        1. If the merchant has an official or widely used Traditional Chinese name in the
+           Taiwan/Hong Kong market, output that name.
+             'ユニクロ' → '優衣庫'      '롯데마트' → '樂天超市'
+             'イオン'   → '永旺'        '이마트'   → '易買得'
+             '無印良品' → '無印良品'    '다이소'   → '大創'
+             'スターバックス' → '星巴克' '올리브영' → 'Olive Young'
+ 
+        2. Otherwise, if the merchant's internationally recognized brand name is written in
+           Latin characters, output that Latin name unchanged. Do not translate it.
+             'ZARA' → 'ZARA'    'Carrefour' → 'Carrefour'    'IKEA' → 'IKEA'
+ 
+        3. Otherwise, transliterate phonetically into Traditional Chinese characters.
+           Never copy the original Kana or Hangul.
+ 
+        BRANCH AND LEGAL SUFFIXES:
+        - Translate branch suffixes: '〜店' stays '〜店', '〜점' → '〜店'.
+          Place names inside branch suffixes follow the rules above ('해운대점' → '海雲臺店').
+        - Remove legal-entity and franchise codes in parentheses, e.g. '(에스에스엠)',
+          '(株)', '(주)', '(有)'.
+        - Example: '미피 해운대점(에스에스엠)' → 'Miffy 海雲臺店'
+ 
+        HARD CONSTRAINT:
+        merchantName must never contain Hiragana, Katakana, or Hangul.
+        Latin letters are allowed only under rule 2.
+ 
+        DESCRIPTION FIELD:
+        For each item, provide a concise Traditional Chinese label. If the brand is
+        recognizable, include the brand followed by the product type in Chinese, plus
+        size/quantity when meaningful. If the brand is not recognizable, give the product
+        type in Chinese only.
+ 
+        CRITICAL:
+        The description must not contain Hiragana, Katakana, Hangul, Cyrillic, or any other
+        non-Latin, non-Chinese script. Traditional Chinese characters, Arabic numerals,
+        units, and recognizable Latin-character brand names are allowed. If a proper noun
+        cannot be confidently translated, transliterate it into Chinese characters rather
+        than copying the original script.
+ 
+        Examples (French):
+          'CONFITURE BM FRAISE 370G'      → 'Bonne Maman 草莓果醬 370g'
+          'CRISTALINE EAU DE SOURCE 5L'   → 'Cristaline 礦泉水 5公升'
+          'POULAIN 1848 PISTACHE CROUSTI' → 'Poulain 1848 開心果巧克力'
+          'PAIN WRAP X6 - 370G MR'        → '捲餅 x6'
+          'KIWI GOLD'                     → '黃金奇異果'
+          'SAUCE SOJA CARAFE X150ML'      → '醬油'
+ 
+        Examples (Korean):
+          '인형 보리스 해바라기'  → '波里斯 向日葵娃娃'
+          '해운대 쇼핑백 S'       → '海雲臺購物袋 S號'
+          '아메리카노 ICE'        → '美式咖啡 冰'
+          '삼각김밥 참치마요'     → '飯糰 鮪魚美乃滋'
+ 
+        Examples (Japanese):
+          'ラムネ 大瓶'           → '彈珠汽水 大瓶'
+          'おにぎり 鮭'           → '飯糰 鮭魚'
+          'コカ・コーラ 500ml'    → '可口可樂 500ml'
+        """;
+    public async Task<ReceiptModel> ParseReceiptAsync(byte[] imageBytes, string mimeType, string? currency = null)
     {
         var apiKey = _configuration["OpenAI:ApiKey:OCR"];
         var model = _configuration["OpenAI:OcrModel"];
@@ -38,70 +100,67 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
             ? "If currency is not specified, infer from receipt text/symbols if possible."
             : $"Use currency '{currency}' as the primary interpretation context for price fields unless the receipt explicitly indicates another currency.";
 
+        var systemPrompt = $"""
+            You are a multilingual receipt OCR extractor for Traditional Chinese, Japanese,
+            Korean, and European receipts.
+            Return ONLY strict JSON with keys: merchantName, consumedAt, totalAmount, items.
+            items must be an array of objects with keys: name, quantity, amount, description.
+            If unknown, use null (or [] for items).
+            Prioritize total amount labels such as: 合計/總計/應付/總金額, 合計(税込)/お会計/請求額,
+            합계/총계/결제금액, total/grand total/amount due.
+            Do not include markdown or extra text.
+ 
+            Determine the receipt's language before extracting merchantName.
+ 
+            {MerchantAndDescriptionRules}
+ 
+            DATES:
+            European receipts (France, etc.) use dd/MM/yy or dd/MM/yyyy — day first, then
+            month, then year. Example: '28/05/26' means day=28, month=05, year=2026 → '2026-05-28'.
+            Never treat the first component as year unless it is clearly 4 digits.
+            Always output consumedAt in ISO 8601 format (YYYY-MM-DDTHH:mm:ss) when possible.
+            """;
+
         var payload = new
         {
             model,
             response_format = new { type = "json_object" },
             messages = new object[]
             {
-            new
-            {
-                role = "system",
-                content = """
-                    You are a multilingual receipt OCR extractor for Traditional Chinese, Japanese, and Korean receipts.
-                    Return ONLY strict JSON with keys: merchantName, consumedAt, totalAmount, items.
-                    items must be an array of objects with keys: name, quantity, amount, description.
-                    If unknown, use null (or [] for items).
-                    Prioritize total amount labels such as: 合計/總計/應付/總金額, 合計(税込)/お会計/請求額, 합계/총계/결제금액, total/grand total/amount due.
-                    Do not include markdown or extra text.
-
-                    DATES: European receipts (France, etc.) use dd/MM/yy or dd/MM/yyyy format — day first, then month, then year.
-                    Example: '28/05/26' means day=28, month=05, year=2026 → output '2026-05-28'.
-                    Never treat the first component as year unless it is clearly 4 digits.
-                    Always output consumedAt in ISO 8601 format (YYYY-MM-DDTHH:mm:ss) when possible.
-
-                    DESCRIPTION FIELD: For each item, provide a concise Traditional Chinese label.
-                    If the brand is recognizable, include it followed by the product type in Chinese and size/quantity if meaningful.
-                    If the brand is not recognizable, just provide the product type in Chinese.
-                    Examples:
-                      'CONFITURE BM FRAISE 370G'         → 'Bonne Maman 草莓果醬 370g'
-                      'CRISTALINE EAU DE SOURCE 5L'      → 'Cristaline 礦泉水 5公升'
-                      'POULAIN 1848 PISTACHE CROUSTI'    → 'Poulain 1848 開心果巧克力'
-                      'PAIN WRAP X6 - 370G MR'           → '捲餅 x6'
-                      'KIWI GOLD'                        → '黃金奇異果'
-                      'SAUCE SOJA CARAFE X150ML'         → '醬油'
-                      'MAYO NATURE FLACON 395G'          → '美乃滋'
-                    """
-            },
-            new
-            {
-                role = "user",
-                content = new object[]
+                new
                 {
-                    new
+                    role = "system",
+                    content = systemPrompt
+                },
+                new
+                {
+                    role = "user",
+                    content = new object[]
                     {
-                        type = "text",
-                        text = $"""
-                            請解析收據（支援英文/中文/日文/韓文/法文）：
-                            1) 店家名稱 -> merchantName
-                            2) 消費時間 -> consumedAt（ISO 格式 YYYY-MM-DDTHH:mm:ss）
-                            3) 總金額   -> totalAmount（優先抓真正總計，不要抓小計或稅額）
-                            4) 明細     -> items[]，每筆含：
-                               - name：收據上的原始品項名稱
-                               - quantity：數量
-                               - amount：金額
-                               - description：繁體中文品項說明（可辨識品牌請保留品牌名，加中文品名與規格；不可辨識則直接給中文品名）
-                            若欄位不存在請回 null；items 沒有就回空陣列。只回傳 JSON。
-                            {currencyHint}
-                            """
-                    },
-                    new
-                    {
-                        type = "image_url",
-                        image_url = new { url = dataUrl }
+                        new
+                        {
+                            type = "text",
+                            text = $"""
+                                請解析收據（支援英文/中文/日文/韓文/法文）：
+                                1) 店家名稱 -> merchantName
+                                2) 消費時間 -> consumedAt（ISO 格式 YYYY-MM-DDTHH:mm:ss）
+                                3) 總金額   -> totalAmount（優先抓真正總計，不要抓小計或稅額）
+                                4) 明細     -> items[]，每筆含：
+                                   - name：收據上的原始品項名稱（保留原文，不翻譯）
+                                   - quantity：數量
+                                   - amount：金額
+                                   - description：繁體中文品項說明
+                                若欄位不存在請回 null；items 沒有就回空陣列。只回傳 JSON。
+                                {currencyHint}
+                                """
+                        },
+                        new
+                        {
+                            type = "image_url",
+                            image_url = new { url = dataUrl }
+                        }
                     }
                 }
-            }
             }
         };
 
@@ -112,85 +171,136 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
         using var response = await HttpClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
 
+        _logger.LogInformation("ocr responseBody: {0}", responseBody);
+
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"OpenAI Vision API 錯誤：{response.StatusCode}, {responseBody}");
 
-        using var doc = JsonDocument.Parse(responseBody);
-        var content = doc.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString();
+        var apiResponse = JsonSerializer.Deserialize<OpenAiOcrModel>(responseBody)
+            ?? throw new InvalidOperationException("無法反序列化 OpenAI Vision API 回應");
 
-        if (string.IsNullOrWhiteSpace(content))
-            throw new InvalidOperationException("OpenAI Vision API 未回傳可解析內容");
+        var content = apiResponse.Choices
+            .FirstOrDefault()?.Message.Content
+            ?? throw new InvalidOperationException("OpenAI Vision API 未回傳可解析內容");
 
-        var json = ExtractJson(content);
-        return FixConsumedAtDate(json);
+        var receipt = JsonSerializer.Deserialize<ReceiptModel>(content)
+             ?? throw new InvalidOperationException("無法解析發票內容");
+
+        FixConsumedAtDate(receipt);
+
+        //// Prompt 無法 100% 保證，偵測到殘留假名/諺文就跑一次純文字修補（不重傳圖片，成本低）
+        //if (NeedsRepair(receipt))
+        //    await RepairScriptAsync(receipt, apiKey, model);
+        return receipt;
     }
 
-    /// <summary>
-    /// 偵測 consumedAt 中不合理的未來日期（年份 > 當前年 + 1），
-    /// 嘗試以 dd/MM/yy 重新解析並修正後回寫 JSON。
-    /// </summary>
-    private static string FixConsumedAtDate(string json)
+    ///// <summary>
+    ///// 偵測殘留的假名 / 諺文。
+    ///// 注意：刻意不包含漢字範圍 (U+4E00–9FFF)，因為「無印良品」這類日文店名本來就該原樣保留。
+    ///// 簡體字此處也抓不到，若有需求需另外對照簡繁對映表。
+    ///// </summary>
+    //private static readonly Regex NonChineseScript = new(
+    //    @"[\u3040-\u309F\u30A0-\u30FF\uFF66-\uFF9D\u1100-\u11FF\u3130-\u318F\uAC00-\uD7A3]",
+    //    RegexOptions.Compiled);
+    //private static bool NeedsRepair(ReceiptModel receipt) =>
+    //    NonChineseScript.IsMatch(receipt.MerchantName ?? string.Empty) ||
+    //    (receipt.Items?.Any(i => NonChineseScript.IsMatch(i.Description ?? string.Empty)) ?? false);
+
+    ///// <summary>
+    ///// 只把 merchantName 與 description 送去重譯，保留 name / quantity / amount 不動。
+    ///// 失敗時不拋例外——修補是盡力而為，原始結果仍可用。
+    ///// </summary>
+    //private async Task RepairScriptAsync(ReceiptModel receipt, string apiKey, string model)
+    //{
+    //    var items = receipt.Items ?? new List<ReceiptItemModel>();
+
+    //    var toRepair = new
+    //    {
+    //        merchantName = receipt.MerchantName,
+    //        items = items
+    //            .Select((item, index) => new { index, name = item.Name, description = item.Description })
+    //            .ToArray()
+    //    };
+
+    //    var payload = new
+    //    {
+    //        model,
+    //        response_format = new { type = "json_object" },
+    //        messages = new object[]
+    //        {
+    //            new
+    //            {
+    //                role = "system",
+    //                content = $"""
+    //                    You fix Traditional Chinese localization in already-extracted receipt data.
+    //                    Input is JSON. Return ONLY JSON with the same shape:
+    //                    {{ "merchantName": string|null, "items": [ {{ "index": int, "description": string|null }} ] }}
+    //                    Keep the index values exactly as given. Do not add or remove items.
+    //                    Do not change any numbers.
+
+        //                    {MerchantAndDescriptionRules}
+        //                    """
+        //            },
+        //            new
+        //            {
+        //                role = "user",
+        //                content = JsonSerializer.Serialize(toRepair)
+        //            }
+        //        }
+        //    };
+
+        //    try
+        //    {
+        //        var repaired = await SendOcrRequestAsync<ReceiptRepairModel>(payload, apiKey, "無法解析修補結果");
+
+        //        if (!string.IsNullOrWhiteSpace(repaired.MerchantName))
+        //            receipt.MerchantName = repaired.MerchantName;
+
+        //        foreach (var fix in repaired.Items ?? new List<ReceiptRepairItemModel>())
+        //        {
+        //            if (fix.Index < 0 || fix.Index >= items.Count)
+        //                continue;
+
+        //            if (!string.IsNullOrWhiteSpace(fix.Description))
+        //                items[fix.Index].Description = fix.Description;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // 修補失敗不影響主流程，保留原始 OCR 結果
+        //        _logger.LogWarning(ex, "收據文字修補失敗，沿用原始 OCR 結果");
+        //    }
+        //}
+
+    private static void FixConsumedAtDate(ReceiptModel receipt)
     {
-        try
+        if (receipt.ConsumedAt is null)
+            return;
+
+        var parsed = receipt.ConsumedAt.Value;
+        var currentYear = DateTime.UtcNow.Year;
+
+        // 年份在合理範圍內，不需修正
+        if (parsed.Year <= currentYear + 1)
+            return;
+
+        // 嘗試以歐式格式重新解析（AI 可能誤把 day 當作年份）
+        // 例如：2028-05-26 應為 2026-05-28
+        var wrongYear = parsed.Year % 100;
+        var reconstructed = $"{parsed.Day:D2}/{parsed.Month:D2}/{wrongYear:D2}";
+
+        string[] europeanFormats = ["dd/MM/yy", "dd/MM/yyyy", "d/M/yy", "d/M/yyyy"];
+
+        foreach (var fmt in europeanFormats)
         {
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (!root.TryGetProperty("consumedAt", out var consumedAtEl) ||
-                consumedAtEl.ValueKind != JsonValueKind.String)
-                return json;
-
-            var raw = consumedAtEl.GetString();
-            if (string.IsNullOrWhiteSpace(raw))
-                return json;
-
-            // 嘗試解析現有值
-            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-                return json;
-
-            var currentYear = DateTime.UtcNow.Year;
-
-            // 若年份超出合理範圍（超過當前年 + 1），表示 AI 誤把 day 當作年份
-            // 例如：2028-05-26 解析自 28/05/26，正確應為 2026-05-28
-            if (parsed.Year > currentYear + 1)
+            if (DateTime.TryParseExact(reconstructed, fmt,
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var corrected))
             {
-                // 嘗試以 dd/MM/yy 格式重新解析原始收據值
-                // 先從 raw 中提取數字區段（可能含時間）
-                var datePart = raw.Contains('T') ? raw[..raw.IndexOf('T')] : raw.Split(' ')[0];
-                var timePart = raw.Contains('T') ? raw[raw.IndexOf('T')..] : string.Empty;
-
-                // 嘗試多種歐式格式
-                string[] europeanFormats = ["dd/MM/yy", "dd/MM/yyyy", "d/M/yy", "d/M/yyyy"];
-
-                // 將 ISO 日期字串中的 '-' 換成 '/' 再嘗試（AI 可能已轉換格式但年份仍錯）
-                // 例如 "2028-05-26" -> day=26, month=05, year=28 -> "26/05/28"
-                var wrongYear = parsed.Year % 100;  // 2028 -> 28（AI 誤判為年份的那個數字）
-                var reconstructed = $"{parsed.Day:D2}/{parsed.Month:D2}/{wrongYear:D2}";
-
-                foreach (var fmt in europeanFormats)
-                {
-                    if (DateTime.TryParseExact(reconstructed, fmt,
-                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var corrected))
-                    {
-                        var correctedStr = corrected.ToString("yyyy-MM-dd") + timePart;
-                        // 重新組裝 JSON，替換 consumedAt 值
-                        return json.Replace(
-                            $"\"{raw}\"",
-                            $"\"{correctedStr}\"");
-                    }
-                }
+                // 保留原本的時間部分，只替換日期
+                receipt.ConsumedAt = corrected.Date + parsed.TimeOfDay;
+                return;
             }
         }
-        catch
-        {
-            // 解析失敗則回傳原始 JSON，不影響主流程
-        }
-
-        return json;
     }
 
     private static string ExtractJson(string content)
@@ -207,9 +317,7 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
         return trimmed;
     }
 
-    private static readonly string CategoryOptions = string.Join(
-    ", ",
-    Enum.GetNames<ItineraryCategoryEnum>().Select(name => ToPromptValue(name)));
+    private static readonly string CategoryOptions = string.Join(", ", Enum.GetNames<ItineraryCategoryEnum>().Select(name => ToPromptValue(name)));
 
     private static string ToPromptValue(string enumName)
     {
@@ -217,6 +325,19 @@ public sealed class OpenAiVisionClient : IOpenAiVisionClient
         return string.Concat(enumName.Select((c, i) =>
             i > 0 && char.IsUpper(c) ? " " + char.ToLower(c) : char.ToLower(c).ToString()));
     }
+
+    private static readonly Regex UntranslatedScriptPattern =
+    new(@"[\uAC00-\uD7A3\u3040-\u30FF]", RegexOptions.Compiled);
+
+    /// <summary>
+    /// 判斷字串中是否含有韓文或日文，若有則回傳 true
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    private static bool ContainsUntranslatedScript(string? text) =>
+        !string.IsNullOrEmpty(text) && UntranslatedScriptPattern.IsMatch(text);
+    #endregion
+
     private static readonly Dictionary<string, ItineraryCategoryEnum> CategoryLookup =
     Enum.GetValues<ItineraryCategoryEnum>()
         .ToDictionary(value => ToPromptValue(value.ToString()), value => value);
