@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using WayfarerAPI.Application.DTOs;
 using WayfarerAPI.Application.Interfaces.Data;
 using WayfarerAPI.Application.Interfaces.QueryServices;
@@ -10,6 +11,7 @@ namespace WayfarerAPI.Application.Services;
 
 public sealed class TravelService : ITravelService
 {
+    private readonly ILogger<TravelService> _logger;
     private readonly ITravelRepository _travelRepository;
     private readonly ITravelFlightRepository _travelFlightRepository;
     private readonly ITravelMemberRepository _travelMemberRepository;
@@ -23,7 +25,8 @@ public sealed class TravelService : ITravelService
         ITravelMemberRepository travelMemberRepository,
         ITravelQueryService travelQueryService,
         IConfigCurrencyRepository configCurrencyRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ILogger<TravelService> logger)
     {
         _travelRepository = travelRepository;
         _travelFlightRepository = travelFlightRepository;
@@ -31,6 +34,7 @@ public sealed class TravelService : ITravelService
         _travelQueryService = travelQueryService;
         _configCurrencyRepository = configCurrencyRepository;
         _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     public async Task<TravelResponseDto> CreateAsync(Guid travellerId, UpsertTravelRequestDto request)
@@ -247,12 +251,22 @@ public sealed class TravelService : ITravelService
 
     public async Task<IEnumerable<TravellerResponseDto>> GetFriendsByTravellerIdAsync(Guid travellerId)
     {
+        _logger.LogInformation(
+        "GetFriends START TravellerId={TravellerId}",
+        travellerId);
         var friends = await _travelQueryService.GetFriendInfoByTravellerIdAsync(travellerId);
-        return friends.Select(info => new TravellerResponseDto
+        _logger.LogInformation(
+        "GetFriends DB completed TravellerId={TravellerId}",
+        travellerId);
+        var result = friends.Select(info => new TravellerResponseDto
         {
             Id = info.Id,
             Name = info.Name,
             Email = info.Email
         });
+        _logger.LogInformation(
+        "GetFriends END TravellerId={TravellerId}",
+        travellerId);
+        return result;
     }
 }
