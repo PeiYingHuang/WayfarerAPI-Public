@@ -254,19 +254,33 @@ public sealed class TravelService : ITravelService
         _logger.LogInformation(
         "GetFriends START TravellerId={TravellerId}",
         travellerId);
-        var friends = await _travelQueryService.GetFriendInfoByTravellerIdAsync(travellerId);
-        _logger.LogInformation(
-        "GetFriends DB completed TravellerId={TravellerId}",
-        travellerId);
-        var result = friends.Select(info => new TravellerResponseDto
+        try
         {
-            Id = info.Id,
-            Name = info.Name,
-            Email = info.Email
-        });
-        _logger.LogInformation(
-        "GetFriends END TravellerId={TravellerId}",
-        travellerId);
-        return result;
+            var friends = await _travelQueryService.GetFriendInfoByTravellerIdAsync(travellerId);
+            _logger.LogInformation(
+       "GetFriends DB completed TravellerId={TravellerId}",
+       travellerId);
+            var result = friends.Select(info => new TravellerResponseDto
+            {
+                Id = info.Id,
+                Name = info.Name,
+                Email = info.Email
+            });
+            _logger.LogInformation(
+            "GetFriends END TravellerId={TravellerId}",
+            travellerId);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+            ex,
+            "GetFriends ERROR TravellerId={TravellerId}",
+            travellerId);
+            throw;
+        }
+        
+       
+       
     }
 }
