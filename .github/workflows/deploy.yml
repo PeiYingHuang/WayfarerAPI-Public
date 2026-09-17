@@ -1,0 +1,61 @@
+name: Deploy .NET API to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: wayfarer-493308
+  REGION: us-west1
+  REPO_NAME: wayfarer-repo
+  SERVICE_NAME: wayfarer-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. 透過 WIF 取得 GCP 權限
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/629855663686/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@wayfarer-493308.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 2. 設定 Docker 登入 Artifact Registry
+      - name: Docker Auth
+        run: |-
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # 3. 建置並推播 .NET 10 Docker Image
+      - name: Build and Push Docker Image
+        run: |-
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          
+          # 將 .NET 專案打包成映像檔
+          docker build -t $IMAGE_URL .
+          docker push $IMAGE_URL
+
+      # 4. 部署到 Cloud Run
+      - name: Deploy to Cloud Run
+        run: |-
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          
+          # .NET 8/10 容器預設運行在 8080 port
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image $IMAGE_URL \
+            --region ${{ env.REGION }} \
+            --port 8080 \
+            --allow-unauthenticated
