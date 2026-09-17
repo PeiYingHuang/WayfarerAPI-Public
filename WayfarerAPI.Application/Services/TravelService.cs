@@ -247,7 +247,6 @@ public sealed class TravelService : ITravelService
 
     public async Task<IEnumerable<TravellerResponseDto>> GetFriendsByTravellerIdAsync(Guid travellerId)
     {
-        var travelIds = (await _travelMemberRepository.GetByTravellerIdAsync(travellerId)).Select(x => x.TravelId).Distinct();
         var friends = await _travelQueryService.GetFriendInfoByTravellerIdAsync(travellerId);
         return friends.Select(info => new TravellerResponseDto
         {
